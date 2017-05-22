@@ -1,6 +1,8 @@
 # Giveme 
 A python dependency injection framework
 
+[![Build Status](https://travis-ci.org/steinitzu/giveme.svg?branch=master)](https://travis-ci.org/steinitzu/giveme)
+
 # Quickstart
 
 ## Basic dependency factories
