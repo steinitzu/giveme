@@ -23,7 +23,7 @@ from giveme import register, inject
 @register
 def something():
     return 'I am a dependency'
-nnnn
+
 
 @inject
 def use_dependency(something):
