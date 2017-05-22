@@ -3,7 +3,17 @@ A python dependency injection framework
 
 [![Build Status](https://travis-ci.org/steinitzu/giveme.svg?branch=master)](https://travis-ci.org/steinitzu/giveme)
 
+# Install
+
 # Quickstart
+
+## Install
+
+On python 3.4 or newer
+
+`pip install giveme`
+
+Python 3.3 should work as well, but untested at the moment.  
 
 ## Basic dependency factories
 
@@ -83,5 +93,11 @@ print(use_dependency())
 # ('I am a dependency', 'So am i')
 ```	
 
+# Testing
 
+You can run the included test suite with pytest
 
+1. Clone this repository
+2. `cd path/to/giveme`
+3. Install pytest -> `pip install pytest`
+4. Run the tests -> `pytest tests.py`
