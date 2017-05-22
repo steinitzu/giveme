@@ -1,7 +1,7 @@
 import pytest
 from functools import wraps
 
-from giveme import register, inject
+from giveme import register, inject, manager
 
 
 def test_inject():
@@ -98,3 +98,53 @@ def test_instance_method():
 
     s = SomeClass()
     assert s.do_some() == 128
+
+
+def test_not_singleton():
+    class Something(object):
+        def __init__(self):
+            self.size = 22
+
+    @register
+    def something():
+        return Something()
+
+    @inject
+    def do_some(something):
+        something.size = 42
+        return something
+
+    @inject
+    def do_some_again(something):
+        return something
+
+    assert do_some() is not do_some_again()
+    assert do_some().size == 42 and do_some_again().size == 22
+
+
+def test_singleton():
+    class Something(object):
+        def __init__(self):
+            self.size = 22
+
+    @register(singleton=True)
+    def something():
+        return Something()
+
+    @inject
+    def do_some(something):
+        something.size = 42
+        return something
+
+    @inject
+    def do_some_again(something):
+        return something
+
+    assert do_some() is do_some_again()
+    assert do_some().size == 42 and do_some_again().size == 42
+
+    
+        
+    
+
+    

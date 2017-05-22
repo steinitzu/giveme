@@ -1,4 +1,4 @@
-from venom import register, inject
+from giveme import register, inject, manager
 
 # Basic
 
@@ -18,8 +18,39 @@ print(use_dependency())
 
 assert use_dependency() == something()
 
+# Singleton
+
+
+class DependencyClass(object):
+    def __init__(self):
+        self.size = 21
+
+        
+@register(singleton=True)
+def something():
+    return DependencyClass()
+
+
+@inject
+def use_dependency(something):
+    print(something.size)
+    something.size = 42
+
+
+@inject
+def use_it_again(something):
+    print(something.size)
+
+
+use_dependency()
+# 22
+use_dependency()
+# 42
 
 # Nested
+
+manager.clear()
+
 
 @register
 def something():
