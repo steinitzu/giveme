@@ -1,6 +1,7 @@
 import inspect
 
 from functools import wraps
+import threading
 
 
 class Manager(object):
@@ -8,13 +9,16 @@ class Manager(object):
     def __init__(self):
         self._registered = {}
         self._singletons = {}
+        self._threadlocals = threading.local
 
-    def register(self, func, singleton=False):
+    def register(self, func, singleton=False, threadlocal=False):
         """
         Register a dependency function
         """
         func._giveme_singleton = singleton
-        self._registered[func.__name__] = func
+        func._giveme_threadlocal = threadlocal
+        
+        self._registered[func.__name__] = func        
         return func
 
     def remove(self, name):
@@ -37,12 +41,18 @@ class Manager(object):
         value = self._singletons.get(name)
         if value:
             return value
+        value = getattr(self._threadlocals, name, None)
+        if value:
+            return value
+        
         function = self._registered.get(name)
 
         if function:
             value = function()
             if function._giveme_singleton:
                 self._singletons[name] = value
+            elif function._giveme_threadlocal:
+                setattr(self._threadlocals, name, value)
             return value
         raise KeyError('Name not found')
 
@@ -54,9 +64,9 @@ class Manager(object):
 manager = Manager()
 
 
-def register(function=None, singleton=False):
+def register(function=None, singleton=False, threadlocal=False):
     def decorator(function):
-        return manager.register(function, singleton=singleton)
+        return manager.register(function, singleton=singleton, threadlocal=threadlocal)
     if function:
         return decorator(function)
     else:
