@@ -1,4 +1,5 @@
-from giveme import register, inject, manager
+from giveme import register, inject
+from giveme.core import manager
 
 # Basic
 

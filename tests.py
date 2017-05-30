@@ -1,7 +1,9 @@
 import pytest
+import time
 from functools import wraps
+from multiprocessing.pool import ThreadPool
 
-from giveme import register, inject, manager
+from giveme import register, inject
 
 
 def test_inject():
@@ -40,6 +42,31 @@ def test_with_kwargs():
     assert do_some(2, 4) == (2, 124, 4, 7)
     assert do_some(2, 4, c=12) == (2, 124, 4, 12)
     assert do_some(2, 4, 12) == (2, 124, 4, 12)
+
+
+def test_manual_override():
+    @register
+    def something():
+        return 5
+
+    @inject
+    def do_some(something, n):
+        return something, n
+
+    assert do_some(something=2, n=3) == (2, 3)
+
+    
+def test_manual_overrideb():
+    @register
+    def something():
+        return 5
+
+    @inject
+    def do_some(n, something, k=3):
+        return n, something, k
+
+    assert do_some(1, 2, 3) == (1, 2, 3)
+    assert do_some(n=1, something=2, k=3) == (1, 2, 3)
 
 
 def test_nested():
@@ -143,8 +170,39 @@ def test_singleton():
     assert do_some() is do_some_again()
     assert do_some().size == 42 and do_some_again().size == 42
 
-    
-        
-    
 
-    
+def test_threadlocal():
+    @register(threadlocal=True)
+    def something():
+        return [1, 2, 3]
+
+    @inject
+    def do_some(something, add):
+        time.sleep(0.5)  # Make sure they run in separate threads
+        something.append(add)
+        return something
+
+    tp = ThreadPool()
+
+    t1 = tp.apply_async(do_some, args=(4, ))
+    t2 = tp.apply_async(do_some, args=(5, ))
+
+    r1 = t1.get()
+    r2 = t2.get()
+
+    assert r1 == [1, 2, 3, 4]
+    assert r2 == [1, 2, 3, 5]
+
+
+def test_no_decorator():
+    def something():
+        return [1, 2, 3]
+
+    def do_some(something):
+        something.append(4)
+        return something
+
+    register(something)
+    do_some = inject(do_some)
+
+    assert do_some() == [1, 2, 3, 4]
