@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='giveme',
-    version='0.1.0',
+    version='0.2.0',
     description='Tiny dependency injection framework',
     author='Steinthor Palsson',
     author_email='steini90@gmail.com',
