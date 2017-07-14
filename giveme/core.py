@@ -1,5 +1,5 @@
 import inspect
-
+from inspect import _ParameterKind as pkind
 from functools import wraps
 import threading
 
@@ -63,17 +63,17 @@ manager = Manager()
 
 def register(function=None, singleton=False, threadlocal=False):
     """
-    Register a dependency factory in the dependency manager. The function name is the 
-    name of the dependency.  
-    This can be used as a decorator.  
+    Register a dependency factory in the dependency manager. The function name is the
+    name of the dependency.
+    This can be used as a decorator.
 
     Args:
         function (callable): The dependency factory function
-            Not needed when used as decorator.  
-        singleton (``bool``, optional): If ``True`` the given function is only called once 
-            during the application lifetime. Injectees will receive the already created 
-            instance when available. Defaults to ``False``   
-        threadlocal (``bool``, optional): Same as singleton except the returned instance 
+            Not needed when used as decorator.
+        singleton (``bool``, optional): If ``True`` the given function is only called once
+            during the application lifetime. Injectees will receive the already created
+            instance when available. Defaults to ``False``
+        threadlocal (``bool``, optional): Same as singleton except the returned instance
             is available only to the thread that created it. Defaults to ``False``
     """
     def decorator(function):
@@ -84,12 +84,23 @@ def register(function=None, singleton=False, threadlocal=False):
         return decorator
 
 
+
+
+
 def inject(func):
     """
-    Inject a dependency into given function's arguments.  
+    Inject a dependency into given function's arguments.
     Can be used as a decorator.
 
-    Args: 
+    Injectee should mention named dependencies as keyword arguments.
+
+    def db_connection():
+        return create_db_connection()
+
+    def save_thing(thing, db_connection=None):
+        db_connection.store(thing)
+
+    Args:
         func (callable): The function that accepts a dependency.
     """
     @wraps(func)
@@ -98,14 +109,19 @@ def inject(func):
         params = signature.parameters
         if not params:
             return func(*args, **kwargs)
-        args = list(args)
-        if len(args)+len(kwargs) == len(params):
-            return func(*args, **kwargs)
-        for i, param in enumerate(signature.parameters):
-            try:
-                service = manager.get_value(param)
-            except KeyError:
+
+        
+        factories = []
+
+        for name, param in params.items():
+            if param.kind not in (pkind.KEYWORD_ONLY, pkind.POSITIONAL_OR_KEYWORD):
                 continue
-            args.insert(i, service)
+            if name in kwargs:
+                # Manual override, ignore it
+                continue
+            try:
+                kwargs[name] = manager.get_value(name)
+            except KeyError:
+                pass
         return func(*args, **kwargs)
     return wrapper

@@ -12,7 +12,7 @@ def test_inject():
         return 124
 
     @inject
-    def do_some(something):
+    def do_some(something=None):
         return something
 
     assert do_some() == 124
@@ -24,10 +24,10 @@ def test_with_other_params():
         return 124
 
     @inject
-    def do_some(a, something, b):
-        return a, something, b
+    def do_some(a, b, something=None):
+        return a, b, something
 
-    assert do_some(2, 4) == (2, 124, 4)
+    assert do_some(2, 4) == (2, 4, 124)
 
 
 def test_with_kwargs():
@@ -36,37 +36,37 @@ def test_with_kwargs():
         return 124
 
     @inject
-    def do_some(a, something, b, c=7):
-        return a, something, b, c
+    def do_some(a, b, something=None, c=7):
+        return a, b, something, c
 
-    assert do_some(2, 4) == (2, 124, 4, 7)
-    assert do_some(2, 4, c=12) == (2, 124, 4, 12)
-    assert do_some(2, 4, 12) == (2, 124, 4, 12)
+    assert do_some(2, 4) == (2, 4, 124, 7)
+    assert do_some(2, 4, c=12) == (2, 4, 124, 12)
 
 
-def test_manual_override():
+def test_manual_override_kwargs():
     @register
     def something():
-        return 5
+        return 'something'
 
     @inject
-    def do_some(something, n):
-        return something, n
+    def do_some(a, b=2, something=None, **kwargs):
+        return a, b, something, kwargs
 
-    assert do_some(something=2, n=3) == (2, 3)
+    assert do_some(2, b=3, something='nothing', c=4) == (2, 3, 'nothing', {'c': 4})
+    assert do_some(1, 2, something='nothing') == (1, 2, 'nothing', {})
 
-    
-def test_manual_overrideb():
+
+def test_manual_override_args_kwargs():
     @register
     def something():
-        return 5
+        return 'something'
 
     @inject
-    def do_some(n, something, k=3):
-        return n, something, k
-
-    assert do_some(1, 2, 3) == (1, 2, 3)
-    assert do_some(n=1, something=2, k=3) == (1, 2, 3)
+    def do_some(*args, something=None, **kwargs):
+        return args, something, kwargs
+    r4 = tuple(range(4))
+    assert do_some(*r4) == (r4, 'something', {})
+    assert do_some(*r4, a='a') == (r4, 'something', {'a': 'a'})
 
 
 def test_nested():
@@ -76,11 +76,11 @@ def test_nested():
 
     @register
     @inject
-    def something_else(something):
+    def something_else(something=None):
         return something*2
 
     @inject
-    def do_some(something_else):
+    def do_some(something_else=None):
         return something_else
 
     assert do_some() == 128*2
@@ -177,7 +177,7 @@ def test_threadlocal():
         return [1, 2, 3]
 
     @inject
-    def do_some(something, add):
+    def do_some(add, something=None):
         time.sleep(0.5)  # Make sure they run in separate threads
         something.append(add)
         return something
