@@ -1,5 +1,4 @@
 import inspect
-from inspect import _ParameterKind as pkind
 from functools import wraps
 import threading
 
@@ -114,7 +113,7 @@ def inject(func):
         factories = []
 
         for name, param in params.items():
-            if param.kind not in (pkind.KEYWORD_ONLY, pkind.POSITIONAL_OR_KEYWORD):
+            if param.kind not in (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD):
                 continue
             if name in kwargs:
                 # Manual override, ignore it
