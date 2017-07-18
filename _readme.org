@@ -1,0 +1,139 @@
+
+* Giveme: dependency injection for python
+
+Giveme is a general purpose dependency injector for python, heavily inspired pytest's fixtures.  
+Use it to inject databases, API clients, framework pieces or anything else that you don't want tightly coupled
+to your code.  
+
+* Install
+
+Python3.4 and up are supported  
+~pip install giveme~
+
+* Usage
+
+** Quickstart
+
+Here we use giveme to inject a random animal into a function.  
+
+#+BEGIN_SRC ipython :session examples :results output :exports both
+import random
+
+from giveme import register, inject
+
+
+def random_animal_factory():
+    animals = ['duck', 'goose', 'horse', 'tiger', 'cow', 'sheep', 'pig']
+    return random.choice(animals)
+
+
+@register
+def animal():
+    return random_animal_factory()
+
+
+@inject
+def print_animal(animal=None): 
+    print("It's a", animal)
+
+
+print_animal()
+print_animal()
+print_animal()
+
+#+END_SRC
+
+#+RESULTS:
+: It's a duck
+: It's a horse
+: It's a tiger
+
+By default the ~animal~ function is called each time it's injected. 
+In this case, each time ~print_animal~ is called.  
+
+We can also inject the animal factory itself:
+
+#+BEGIN_SRC ipython :session examples :results output :exports both
+@register
+def animal_factory():
+    return random_animal_factory
+
+
+@inject
+def print_animal(animal_factory=None): 
+    print("It's a", animal_factory())
+
+
+print_animal()
+print_animal()
+print_animal()
+
+#+END_SRC
+
+#+RESULTS:
+: It's a duck
+: It's a horse
+: It's a cow
+
+
+** Singleton and threadlocal dependencies
+
+You may want only one instance of something throughout the lifetime 
+of your application, or one instance per thread.  
+~@register~ accepts the keyword arguments ~singleton~ and ~threadlocal~ to support this.  
+
+
+#+BEGIN_SRC ipython :session examples :results output :exports both
+@register(singleton=True)
+def animal():
+    return random_animal_factory()
+
+
+@inject
+def print_animal(animal=None): 
+    print("It's a", animal)
+
+
+print_animal()
+print_animal()
+print_animal()
+
+#+END_SRC
+
+#+RESULTS:
+: It's a pig
+: It's a pig
+: It's a pig
+
+Now ~animal~ is only called once and every function that injects it gets the same animal.  
+~@register(threadlocal=True)~ works the same way, except the animal instance is only available to the thread that created it.  
+
+** Override dependencies
+
+Injected dependencies can always be overridden by passing a value manually. Great for testing!
+
+#+BEGIN_SRC ipython :session examples :results output :exports both
+@inject
+def print_animal(animal=None): 
+    print("It's a", animal)
+
+
+print_animal()
+# Manual override, must use the named argument explictly
+print_animal(animal='snake')
+#+END_SRC
+
+#+RESULTS:
+: It's a pig
+: It's a snake
+
+* Testing
+You can run the included test suite with pytest
+
+1. Clone this repository
+2. cd path/to/giveme
+3. Install pytest -> pip install pytest
+4. Run the tests -> pytest tests.py
+
+* Contributing 
+If you run into bugs or have questions, please open an issue. Pull requests are welcome.
