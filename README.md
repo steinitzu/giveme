@@ -1,5 +1,7 @@
 # Giveme: dependency injection for python
 
+[![Build Status](https://travis-ci.org/steinitzu/giveme.svg?branch=master)](https://travis-ci.org/steinitzu/giveme)
+
 Giveme is a general purpose dependency injector for python, heavily inspired pytest's fixtures. Use it to inject databases, API clients, framework pieces or anything else that you don't want tightly coupled to your code.
 
 - [Install](#org492d6de)
