@@ -10,14 +10,16 @@ class Manager(object):
         self._singletons = {}
         self._threadlocals = threading.local()
 
-    def register(self, func, singleton=False, threadlocal=False):
+    def register(self, func, singleton=False, threadlocal=False, name=None):
         """
         Register a dependency function
         """
         func._giveme_singleton = singleton
         func._giveme_threadlocal = threadlocal
-        
-        self._registered[func.__name__] = func
+
+        if name is None:
+            name = func.__name__
+        self._registered[name] = func
         return func
 
     def remove(self, name):
@@ -60,7 +62,7 @@ class Manager(object):
 manager = Manager()
 
 
-def register(function=None, singleton=False, threadlocal=False):
+def register(function=None, *, singleton=False, threadlocal=False, name=None):
     """
     Register a dependency factory in the dependency manager. The function name is the
     name of the dependency.
@@ -74,16 +76,14 @@ def register(function=None, singleton=False, threadlocal=False):
             instance when available. Defaults to ``False``
         threadlocal (``bool``, optional): Same as singleton except the returned instance
             is available only to the thread that created it. Defaults to ``False``
+        name (``str``, optional): Overriden name for injection. Defaults to ``None``
     """
     def decorator(function):
-        return manager.register(function, singleton=singleton, threadlocal=threadlocal)
+        return manager.register(function, singleton=singleton, threadlocal=threadlocal, name=name)
     if function:
         return decorator(function)
     else:
         return decorator
-
-
-
 
 
 def inject(func):
@@ -108,10 +108,6 @@ def inject(func):
         params = signature.parameters
         if not params:
             return func(*args, **kwargs)
-
-        
-        factories = []
-
         for name, param in params.items():
             if param.kind not in (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD):
                 continue
