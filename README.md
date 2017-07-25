@@ -1,31 +1,34 @@
-# Giveme: dependency injection for python
-
 [![Build Status](https://travis-ci.org/steinitzu/giveme.svg?branch=master)](https://travis-ci.org/steinitzu/giveme)
 
-Giveme is a general purpose dependency injector for python, heavily inspired pytest's fixtures. Use it to inject databases, API clients, framework pieces or anything else that you don't want tightly coupled to your code.
+# Giveme: dependency injection for python
 
-- [Install](#org492d6de)
-- [Usage](#org5d55f59)
-  - [Quickstart](#org9880d2f)
-  - [Singleton and threadlocal dependencies](#org16b02cc)
-  - [Override dependencies](#org0f12126)
-- [Testing](#orgd0e861b)
-- [Contributing](#orgc75efc6)
+Giveme is a general purpose dependency injector for python, heavily inspired pytest's fixtures.  
+Use it to inject databases, API clients, framework pieces or anything else that you don't want tightly coupled
+to your code.
+
+- [Install](#org53cfba9)
+- [Usage](#orgce81443)
+  - [Quickstart](#orgdbe7ef4)
+  - [Singleton and threadlocal dependencies](#org2e1bcce)
+  - [Override dependencies](#orgb3c77d1)
+  - [Naming dependencies](#org859df28)
+- [Testing](#org78420ca)
+- [Contributing](#org4d66ef7)
 
 
-<a id="org492d6de"></a>
+<a id="org53cfba9"></a>
 
 # Install
 
 Python3.4 and up are supported `pip install giveme`
 
 
-<a id="org5d55f59"></a>
+<a id="orgce81443"></a>
 
 # Usage
 
 
-<a id="org9880d2f"></a>
+<a id="orgdbe7ef4"></a>
 
 ## Quickstart
 
@@ -58,9 +61,9 @@ print_animal()
 
 ```
 
-    It's a sheep
-    It's a duck
-    It's a pig
+    It's a cow
+    It's a goose
+    It's a cow
 
 By default the `animal` function is called each time it's injected. In this case, each time `print_animal` is called.
 
@@ -83,12 +86,12 @@ print_animal()
 
 ```
 
-    It's a cow
-    It's a sheep
     It's a pig
+    It's a horse
+    It's a sheep
 
 
-<a id="org16b02cc"></a>
+<a id="org2e1bcce"></a>
 
 ## Singleton and threadlocal dependencies
 
@@ -111,14 +114,14 @@ print_animal()
 
 ```
 
-    It's a pig
-    It's a pig
-    It's a pig
+    It's a horse
+    It's a horse
+    It's a horse
 
 Now `animal` is only called once and every function that injects it gets the same animal. `@register(threadlocal=True)` works the same way, except the animal instance is only available to the thread that created it.
 
 
-<a id="org0f12126"></a>
+<a id="orgb3c77d1"></a>
 
 ## Override dependencies
 
@@ -135,11 +138,39 @@ print_animal()
 print_animal(animal='snake')
 ```
 
-    It's a pig
+    It's a horse
     It's a snake
 
 
-<a id="orgd0e861b"></a>
+<a id="org859df28"></a>
+
+## Naming dependencies
+
+By default when using `@register` , the dependency is named after the decorated function. To override this a custom name can be passed using the `name` keyword argument:
+
+```python
+@register(name='cache_db')
+def redis_client():
+    return MyRedisClient()p
+
+@inject
+def do_cache_stuff(cache_db=None):
+    ...
+```
+
+`@inject` binds registered dependency names to argument names by default. You can override this behavior and specify which dependencies are injected into which arguments by passing pairs of `argument_name='dependency_name'` to `@inject`
+
+Example:
+
+```python
+@inject(db='cache_db')
+def do_cache_stuff(db=None):
+    # db is cache_db
+    ...
+```
+
+
+<a id="org78420ca"></a>
 
 # Testing
 
@@ -151,7 +182,7 @@ You can run the included test suite with pytest
 4.  Run the tests -> pytest tests.py
 
 
-<a id="orgc75efc6"></a>
+<a id="org4d66ef7"></a>
 
 # Contributing
 

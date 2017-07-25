@@ -206,3 +206,15 @@ def test_no_decorator():
     do_some = inject(do_some)
 
     assert do_some() == [1, 2, 3, 4]
+
+
+def test_inject_name_override():
+    @register
+    def dependency():
+        return 1
+
+    @inject(d='dependency')
+    def do(d):
+        return d
+
+    assert do() == 1

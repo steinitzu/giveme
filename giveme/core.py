@@ -76,7 +76,8 @@ def register(function=None, *, singleton=False, threadlocal=False, name=None):
             instance when available. Defaults to ``False``
         threadlocal (``bool``, optional): Same as singleton except the returned instance
             is available only to the thread that created it. Defaults to ``False``
-        name (``str``, optional): Overriden name for injection. Defaults to ``None``
+        name (``str``, optional): Overridden name for the dependency.
+            Defaults to the name of the registered function.
     """
     def decorator(function):
         return manager.register(function, singleton=singleton, threadlocal=threadlocal, name=name)
@@ -88,20 +89,33 @@ def register(function=None, *, singleton=False, threadlocal=False, name=None):
 
 def inject(function=None, **overridden_names):
     """
-    Inject a dependency into given function's arguments.
-    Can be used as a decorator.
+    Inject dependencies into given function's arguments.
+    By default the injector looks for keyword arguments
+    matching registered dependency names.
 
-    Injectee should mention named dependencies as keyword arguments.
+    Example:
 
-    def db_connection():
-        return create_db_connection()
+        @register
+        def db_connection():
+            return create_db_connection()
 
-    def save_thing(thing, db_connection=None):
-        db_connection.store(thing)
+        @inject
+        def save_thing(thing, db_connection=None):
+            db_connection.store(thing)
+
+    Arbitrary arguments may also be mapped to
+    specific dependency names by passing them to the
+    decorator as ``arg='dependency_name'``
+
+    Example:
+        @inject(db='db_connection')
+        def save_thing(thing, db=None):  # `db_connection` injected as `db`
 
     Args:
         function (callable): The function that accepts a dependency.
-        **overridden_names: override function names
+            Implicitly passed when used as a decorator.
+        **overridden_names: Mappings of `function` arguments to
+            dependency names in the form of ``function_argument='dependency name'``
     """
     def decorator(function):
         @wraps(function)

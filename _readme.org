@@ -1,13 +1,16 @@
+#+BEGIN_EXPORT markdown
+[![Build Status](https://travis-ci.org/steinitzu/giveme.svg?branch=master)](https://travis-ci.org/steinitzu/giveme)
 
-* Giveme: dependency injection for python
+# Giveme: dependency injection for python
 
 Giveme is a general purpose dependency injector for python, heavily inspired pytest's fixtures.  
 Use it to inject databases, API clients, framework pieces or anything else that you don't want tightly coupled
 to your code.  
+#+END_EXPORT
 
 * Install
 
-Python3.4 and up are supported  
+Python3.4 and up are supported:   
 ~pip install giveme~
 
 * Usage
@@ -126,6 +129,34 @@ print_animal(animal='snake')
 #+RESULTS:
 : It's a pig
 : It's a snake
+
+** Naming dependencies
+
+By default when using ~@register~ , the dependency is named after
+the decorated function.
+To override this a custom name can be passed using the ~name~ keyword argument:
+
+#+BEGIN_SRC python
+@register(name='cache_db')
+def redis_client():
+    return MyRedisClient()p
+
+@inject
+def do_cache_stuff(cache_db=None):
+    ...
+#+END_SRC
+
+~@inject~ binds registered dependency names to argument names by default.  
+You can override this behavior and specify which dependencies are injected into which arguments by
+passing pairs of ~argument_name='dependency_name'~ to ~@inject~
+
+Example:
+#+BEGIN_SRC python
+@inject(db='cache_db')
+def do_cache_stuff(db=None):
+    # db is cache_db
+    ...
+#+END_SRC
 
 * Testing
 You can run the included test suite with pytest
