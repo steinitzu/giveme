@@ -86,7 +86,7 @@ def register(function=None, *, singleton=False, threadlocal=False, name=None):
         return decorator
 
 
-def inject(func):
+def inject(function=None, **overridden_names):
     """
     Inject a dependency into given function's arguments.
     Can be used as a decorator.
@@ -100,23 +100,30 @@ def inject(func):
         db_connection.store(thing)
 
     Args:
-        func (callable): The function that accepts a dependency.
+        function (callable): The function that accepts a dependency.
+        **overridden_names: override function names
     """
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        signature = inspect.signature(func)
-        params = signature.parameters
-        if not params:
-            return func(*args, **kwargs)
-        for name, param in params.items():
-            if param.kind not in (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD):
-                continue
-            if name in kwargs:
-                # Manual override, ignore it
-                continue
-            try:
-                kwargs[name] = manager.get_value(name)
-            except KeyError:
-                pass
-        return func(*args, **kwargs)
-    return wrapper
+    def decorator(function):
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            signature = inspect.signature(function)
+            params = signature.parameters
+            if not params:
+                return function(*args, **kwargs)
+            for name, param in params.items():
+                if param.kind not in (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD):
+                    continue
+                if name in kwargs:
+                    # Manual override, ignore it
+                    continue
+                try:
+                    resolved_name = overridden_names.get(name, name)
+                    kwargs[name] = manager.get_value(resolved_name)
+                except KeyError:
+                    pass
+            return function(*args, **kwargs)
+        return wrapper
+    if function:
+        return decorator(function)
+    else:
+        return decorator
