@@ -1,10 +1,26 @@
 import threading
 from functools import wraps
-from inspect import signature as get_signature
+from inspect import signature
+import warnings
 
 
-class DependencyNotFound(Exception):
+class DependencyNotFoundError(Exception):
     pass
+
+
+class DependencyNotFoundWarning(RuntimeWarning):
+    pass
+
+
+ambigious_not_found_msg = (
+    'An ambigious DependencyNotFound error occured. '
+    'Giveme could not find a dependency '
+    'named "{}" but a matching argument'
+    'was not passed. '
+    'Unable to tell whether you meant to inject '
+    'a dependency or simply forgot to pass '
+    'the correct arguments.'
+)
 
 
 class Dependency:
@@ -55,7 +71,7 @@ class Injector:
         try:
             dep = self._registry[name]
         except KeyError:
-            raise DependencyNotFound(name)
+            raise DependencyNotFoundError(name) from None
         value = self.cached(dep)
         if value is None:
             value = dep.factory()
@@ -80,23 +96,31 @@ class Injector:
         def decorator(function):
             @wraps(function)
             def wrapper(*args, **kwargs):
-                signature = get_signature(function)
-                params = signature.parameters
-                if not params:
-                    return function(*args, **kwargs)
-                for name, param in params.items():
-                    ptypes = (param.KEYWORD_ONLY, param.POSITIONAL_OR_KEYWORD)
-                    if param.kind not in ptypes:
-                        continue
-                    if name in kwargs:
-                        # Manual override, ignore it
-                        continue
-                    try:
-                        resolved_name = names.get(name, name)
-                        kwargs[name] = self.get(resolved_name)
-                    except DependencyNotFound:
-                        pass
-                return function(*args, **kwargs)
+                sig = signature(function)
+                params = sig.parameters
+
+                bound = sig.bind_partial(*args, **kwargs)
+                bound.apply_defaults()
+
+                injected_kwargs = {}
+                for key, value in params.items():
+                    if key not in bound.arguments:
+                        name = names.get(key)
+                        if name:
+                            # Raise error when dep named explicitly
+                            # and missing
+                            injected_kwargs[key] = self.get(name)
+                        else:
+                            try:
+                                injected_kwargs[key] = self.get(key)
+                            except DependencyNotFoundError as e:
+                                warnings.warn(
+                                    ambigious_not_found_msg.format(key),
+                                    DependencyNotFoundWarning
+                                )
+                            
+                injected_kwargs.update(bound.kwargs)
+                return function(*bound.args, **injected_kwargs)
             return wrapper
         if function:
             return decorator(function)
