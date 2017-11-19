@@ -1,9 +1,17 @@
+"""
+:deprecated: 1.0.0
+"""
+
 import inspect
 from functools import wraps
 import threading
+import warnings
 
 
 class Manager(object):
+    """
+    :deprecated: 1.0.0
+    """
 
     def __init__(self):
         self._registered = {}
@@ -64,6 +72,9 @@ manager = Manager()
 
 def register(function=None, *, singleton=False, threadlocal=False, name=None):
     """
+    :deprecated: 1.0.0
+    Use :class:`giveme.injector.Injector` instead.
+
     Register a dependency factory in the dependency manager. The function name is the
     name of the dependency.
     This can be used as a decorator.
@@ -79,7 +90,17 @@ def register(function=None, *, singleton=False, threadlocal=False, name=None):
         name (``str``, optional): Overridden name for the dependency.
             Defaults to the name of the registered function.
     """
+    warnings.warn(
+        (
+            'Module level `register` decorator has been deprecated and will '
+            'be removed in a future release. '
+            'Use the Injector class instead'
+        ),
+        DeprecationWarning
+    )
+
     def decorator(function):
+
         return manager.register(function, singleton=singleton, threadlocal=threadlocal, name=name)
     if function:
         return decorator(function)
@@ -89,6 +110,9 @@ def register(function=None, *, singleton=False, threadlocal=False, name=None):
 
 def inject(function=None, **overridden_names):
     """
+    :deprecated: 1.0.0
+    Use :class:`giveme.injector.Injector` instead.
+
     Inject dependencies into given function's arguments.
     By default the injector looks for keyword arguments
     matching registered dependency names.
@@ -117,7 +141,16 @@ def inject(function=None, **overridden_names):
         **overridden_names: Mappings of `function` arguments to
             dependency names in the form of ``function_argument='dependency name'``
     """
-    def decorator(function):
+    warnings.warn(
+        (
+            'Module level `inject` decorator has been deprecated and will '
+            'be removed in a future release. '
+            'Use the Injector class instead'
+        ),
+        DeprecationWarning
+    )
+    
+    def decorator(function):        
         @wraps(function)
         def wrapper(*args, **kwargs):
             signature = inspect.signature(function)

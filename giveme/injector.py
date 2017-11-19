@@ -24,6 +24,9 @@ ambigious_not_found_msg = (
 
 
 class Dependency:
+    
+    __slots__ = ('name', 'factory', 'singleton', 'threadlocal')
+    
     def __init__(self, name, factory, singleton=False, threadlocal=False):
         self.name = name
         self.factory = factory
@@ -38,9 +41,16 @@ class Injector:
         self._singleton = {}
         self._registry = {}
 
-    def cache(self, dependency, value):
+    def cache(self, dependency: Dependency, value):
         """
-        Cache instance of dependency.
+        Store an instance of dependency in the cache.
+        Does nothing if dependency is NOT a threadlocal
+        or a singleton.  
+
+        :param dependency: The ``Dependency`` to cache
+        :param value: The value to cache for dependency
+
+        :type dependency: Dependency
         """
         if dependency.threadlocal:
             setattr(self._local, dependency.name, value)
@@ -50,18 +60,34 @@ class Injector:
     def cached(self, dependency):
         """
         Get a cached instance of dependency.
+
+        :param dependency: The ``Dependency`` to retrievie value for
+        :type dependency: ``Dependency``
+        :return: The cached value        
         """
         if dependency.threadlocal:
             return getattr(self._local, dependency.name, None)
         elif dependency.singleton:
             return self._singleton.get(dependency.name)
 
-    def set(self, name, factory, singleton=False, threadlocal=False):
+    def _set(self, name, factory, singleton=False, threadlocal=False):
+        """
+        Add a dependency factory to the registry
+
+        :param name: Name of dependency
+        :param factory: function/callable that returns dependency
+        :param singleton: When True, makes the dependency a singleton.
+            Factory will only be called on first use, subsequent 
+            uses receive a cached value.
+        :param threadlocal: When True, register dependency as a threadlocal singleton,
+            Same functionality as ``singleton`` except :class:`Threading.local` is used
+            to cache return values.
+        """
         name = name or factory.__name__
         dep = Dependency(name, factory, singleton, threadlocal)
         self._registry[name] = dep
 
-    def get(self, name):
+    def get(self, name: str):
         """
         Get an instance of dependency,
         this can be either a cached instance
@@ -77,22 +103,64 @@ class Injector:
             value = dep.factory()
             self.cache(dep, value)
         return value
-        
-    def exists(self, name):
-        return name in self._registry
 
     def delete(self, name):
+        """
+        Delete (unregister) a dependency by name.
+        """
         del self._registry[name]
 
     def register(self, function=None, *, singleton=False, threadlocal=False, name=None):
+        """
+        Add an object to the injector's registry.
+
+        Can be used as a decorator like so:
+        
+        >>> @injector.register
+        ... def my_dependency(): ...
+
+        or a plain function call by passing in a callable
+        injector.register(my_dependency)
+
+        :param function: The function or callable to add to the registry
+        :param name: Set the name of the dependency. Defaults to the name of `function`
+        :param singleton: When True, register dependency as a singleton, this
+            means that `function` is called on first use and its 
+            return value cached for subsequent uses. Defaults to False
+        :param threadlocal: When True, register dependency as a threadlocal singleton,
+            Same functionality as ``singleton`` except :class:`Threading.local` is used
+            to cache return values.
+        :type function: callable
+        :type singleton: bool
+        :type threadlocal: bool
+        :type name: string
+        """
         def decorator(function=None):
-            self.set(name, function, singleton, threadlocal)
+            self._set(name, function, singleton, threadlocal)
             return function
         if function:
             return decorator(function)
         return decorator
 
     def inject(self, function=None, **names):
+        """
+        Inject dependencies into `funtion`'s arguments when called.
+
+        >>> @injector.inject
+        ... def use_dependency(dependency_name):
+                ...
+        >>> use_dependency()
+
+        The `Injector` will look for registered dependencies
+        matching named arguments and automatically pass
+        them to the given function when it's called.
+
+        :param function: The function to inject into
+        :type function: callable
+        :param \**names: in the form of ``argument='name'`` to override
+            the default behavior which matches dependency names with argument
+            names.
+        """
         def decorator(function):
             @wraps(function)
             def wrapper(*args, **kwargs):
