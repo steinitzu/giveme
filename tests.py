@@ -251,7 +251,7 @@ def kwargs_f(a, b, c, simple_dep, d=4):
 
 
 def varargs_f(*args, simple_dep):
-    return (*args, simple_dep)
+    return tuple(list(args)+[simple_dep])
 
 
 class DepClass:
