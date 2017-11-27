@@ -1,176 +1,116 @@
+- [Documentation](#orgf158989)
+- [Quick start](#org838d453)
+- [Install](#org20027b7)
+- [Changes in version 1.0](#org4c4a53e)
+  - [Migrating from <1.0](#org237fed8)
+- [Testing](#org63ec727)
+- [Contributing](#org9104475)
+
 [![Build Status](https://travis-ci.org/steinitzu/giveme.svg?branch=master)](https://travis-ci.org/steinitzu/giveme)
 
 # Giveme: dependency injection for python
 
-Giveme is a general purpose dependency injector for python, heavily inspired pytest's fixtures.  
-Use it to inject databases, API clients, framework pieces or anything else that you don't want tightly coupled
-to your code.
+GiveMe is a simple, no-nonsense dependency injection framework for python.
 
-- [Install](#org53cfba9)
-- [Usage](#orgce81443)
-  - [Quickstart](#orgdbe7ef4)
-  - [Singleton and threadlocal dependencies](#org2e1bcce)
-  - [Override dependencies](#orgb3c77d1)
-  - [Naming dependencies](#org859df28)
-- [Testing](#org78420ca)
-- [Contributing](#org4d66ef7)
+Its features include:
+
+-   Simple `register` and `inject` decorators to register dependency factories or classes and inject their return value into other function/method arguments.
+-   Painfree configuration for singleton and thread local dependencies
+-   Injected dependencies can always be overridden by manually passed arguments (great for testing)
 
 
-<a id="org53cfba9"></a>
+<a id="orgf158989"></a>
+
+# Documentation
+
+Examples and API documentation can be found on ReadTheDocs: <https://giveme.readthedocs.io>
+
+
+<a id="org838d453"></a>
+
+# Quick start
+
+```python
+from giveme import Injector
+
+injector = Injector()
+
+@injector.register
+def magic_number():
+    return 42
+
+@injector.inject
+def multiply(n, magic_number):
+    return n*magic_number
+
+multiply(2)
+```
+
+```python
+84
+```
+
+GiveMe has many more advanced options, for more examples and full API documentation please visit <https://giveme.readthedocs.io>
+
+
+<a id="org20027b7"></a>
 
 # Install
 
-Python3.4 and up are supported `pip install giveme`
+`pip install giveme`
+
+Python3.4 and up are supported.
 
 
-<a id="orgce81443"></a>
+<a id="org4c4a53e"></a>
 
-# Usage
+# Changes in version 1.0
+
+GiveMe has received some improvements in 1.0:
+
+-   New `Injector` class with `register` and `inject` decorators as instance methods. To support more than one dependency registry in a project.
+-   Module level decoraters `giveme.register` and `giveme.inject` have been deprecated, `Injector.register` and `Injector.inject` should be used instead.
+-   Vastly improved argument binding in `Injector.inject` which acts in accordance to default python argument binding. Better distinction between injected arguments and manually passed arguments.
+-   `DependencyNotFoundError` thrown from `inject` when an explicitly mapped (e.g. arg<sub>name</sub>='dependency<sub>name</sub>') dependency is not registered or passed in manually for easier debugging
+-   `DependencyNotFoundWarning` raised in ambigious cases where an argument is not explicitly mapped to dependency and not passed in manually.
 
 
-<a id="orgdbe7ef4"></a>
+<a id="org237fed8"></a>
 
-## Quickstart
+## Migrating from <1.0
 
-Here we use giveme to inject a random animal into a function.
+The API is mostly the same. If you were using the module levels decorators in a standard way before:
 
 ```python
-import random
-
 from giveme import register, inject
 
-
-def random_animal_factory():
-    animals = ['duck', 'goose', 'horse', 'tiger', 'cow', 'sheep', 'pig']
-    return random.choice(animals)
-
-
 @register
-def animal():
-    return random_animal_factory()
-
-
-@inject
-def print_animal(animal=None): 
-    print("It's a", animal)
-
-
-print_animal()
-print_animal()
-print_animal()
-
-```
-
-    It's a cow
-    It's a goose
-    It's a cow
-
-By default the `animal` function is called each time it's injected. In this case, each time `print_animal` is called.
-
-We can also inject the animal factory itself:
-
-```python
-@register
-def animal_factory():
-    return random_animal_factory
-
+def something():
+    ...
 
 @inject
-def print_animal(animal_factory=None): 
-    print("It's a", animal_factory())
-
-
-print_animal()
-print_animal()
-print_animal()
-
-```
-
-    It's a pig
-    It's a horse
-    It's a sheep
-
-
-<a id="org2e1bcce"></a>
-
-## Singleton and threadlocal dependencies
-
-You may want only one instance of something throughout the lifetime of your application, or one instance per thread. `@register` accepts the keyword arguments `singleton` and `threadlocal` to support this.
-
-```python
-@register(singleton=True)
-def animal():
-    return random_animal_factory()
-
-
-@inject
-def print_animal(animal=None): 
-    print("It's a", animal)
-
-
-print_animal()
-print_animal()
-print_animal()
-
-```
-
-    It's a horse
-    It's a horse
-    It's a horse
-
-Now `animal` is only called once and every function that injects it gets the same animal. `@register(threadlocal=True)` works the same way, except the animal instance is only available to the thread that created it.
-
-
-<a id="orgb3c77d1"></a>
-
-## Override dependencies
-
-Injected dependencies can always be overridden by passing a value manually. Great for testing!
-
-```python
-@inject
-def print_animal(animal=None): 
-    print("It's a", animal)
-
-
-print_animal()
-# Manual override, must use the named argument explictly
-print_animal(animal='snake')
-```
-
-    It's a horse
-    It's a snake
-
-
-<a id="org859df28"></a>
-
-## Naming dependencies
-
-By default when using `@register` , the dependency is named after the decorated function. To override this a custom name can be passed using the `name` keyword argument:
-
-```python
-@register(name='cache_db')
-def redis_client():
-    return MyRedisClient()p
-
-@inject
-def do_cache_stuff(cache_db=None):
+def do_stuff(something):
     ...
 ```
 
-`@inject` binds registered dependency names to argument names by default. You can override this behavior and specify which dependencies are injected into which arguments by passing pairs of `argument_name='dependency_name'` to `@inject`
-
-Example:
+The only change you'll have to make is to create an instance of `Injector` and use its instance method decorators instead:
 
 ```python
-@inject(db='cache_db')
-def do_cache_stuff(db=None):
-    # db is cache_db
+from giveme import Injector
+
+injector = Injector()
+
+@injector.register
+def something():
+    ...
+
+@injector.inject
+def do_stuff(something):
     ...
 ```
 
 
-<a id="org78420ca"></a>
+<a id="org63ec727"></a>
 
 # Testing
 
@@ -178,12 +118,12 @@ You can run the included test suite with pytest
 
 1.  Clone this repository
 2.  cd path/to/giveme
-3.  Install pytest -> pip install pytest
-4.  Run the tests -> pytest tests.py
+3.  Install pytest -> `pip install pytest`
+4.  Run the tests -> `pytest tests.py`
 
 
-<a id="org4d66ef7"></a>
+<a id="org9104475"></a>
 
 # Contributing
 
-If you run into bugs or have questions, please open an issue. Pull requests are welcome.
+Pull requests are welcome. Please post any bug reports, questions and suggestions to the issue tracker <https://github.com/steinitzu/giveme/issues>
