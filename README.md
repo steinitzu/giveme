@@ -1,10 +1,10 @@
-- [Documentation](#orgf158989)
-- [Quick start](#org838d453)
-- [Install](#org20027b7)
-- [Changes in version 1.0](#org4c4a53e)
-  - [Migrating from <1.0](#org237fed8)
-- [Testing](#org63ec727)
-- [Contributing](#org9104475)
+- [Documentation](#org7e529b6)
+- [Quick start](#org07a14b0)
+- [Install](#orgfce85dd)
+- [Changes in version 1.0](#orgd8ed99f)
+  - [Migrating from <1.0](#org4c92880)
+- [Testing](#orgdce1e44)
+- [Contributing](#org6ef425e)
 
 [![Build Status](https://travis-ci.org/steinitzu/giveme.svg?branch=master)](https://travis-ci.org/steinitzu/giveme)
 
@@ -19,14 +19,14 @@ Its features include:
 -   Injected dependencies can always be overridden by manually passed arguments (great for testing)
 
 
-<a id="orgf158989"></a>
+<a id="org7e529b6"></a>
 
 # Documentation
 
 Examples and API documentation can be found on ReadTheDocs: <https://giveme.readthedocs.io>
 
 
-<a id="org838d453"></a>
+<a id="org07a14b0"></a>
 
 # Quick start
 
@@ -53,16 +53,16 @@ multiply(2)
 GiveMe has many more advanced options, for more examples and full API documentation please visit <https://giveme.readthedocs.io>
 
 
-<a id="org20027b7"></a>
+<a id="orgfce85dd"></a>
 
 # Install
 
 `pip install giveme`
 
-Python3.4 and up are supported.
+Python3.5 and up are supported.
 
 
-<a id="org4c4a53e"></a>
+<a id="orgd8ed99f"></a>
 
 # Changes in version 1.0
 
@@ -75,7 +75,7 @@ GiveMe has received some improvements in 1.0:
 -   `DependencyNotFoundWarning` raised in ambigious cases where an argument is not explicitly mapped to dependency and not passed in manually.
 
 
-<a id="org237fed8"></a>
+<a id="org4c92880"></a>
 
 ## Migrating from <1.0
 
@@ -110,7 +110,7 @@ def do_stuff(something):
 ```
 
 
-<a id="org63ec727"></a>
+<a id="orgdce1e44"></a>
 
 # Testing
 
@@ -122,7 +122,7 @@ You can run the included test suite with pytest
 4.  Run the tests -> `pytest tests.py`
 
 
-<a id="org9104475"></a>
+<a id="org6ef425e"></a>
 
 # Contributing
 

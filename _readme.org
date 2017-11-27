@@ -47,7 +47,7 @@ for more examples and full API documentation please visit https://giveme.readthe
 
 ~pip install giveme~
 
-Python3.4 and up are supported.
+Python3.5 and up are supported.
 
 * Changes in version 1.0
 
