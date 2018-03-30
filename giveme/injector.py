@@ -1,7 +1,9 @@
 import threading
-from functools import wraps
+from functools import wraps, partial
 from inspect import signature
 import warnings
+
+from .deferredproperty import DeferredProperty
 
 
 class DependencyNotFoundError(Exception):
@@ -84,6 +86,7 @@ class Injector:
             to cache return values.
         """
         name = name or factory.__name__
+        factory._giveme_registered_name = name
         dep = Dependency(name, factory, singleton, threadlocal)
         self._registry[name] = dep
 
@@ -193,3 +196,30 @@ class Injector:
         if function:
             return decorator(function)
         return decorator
+
+    def resolve(self, dependency):
+        """
+        Resolve dependency as instance attribute 
+        of given class.
+
+        >>> class Users:
+        ...     db = injector.resolve(user_db)
+        ...
+        ...     def get_by_id(self, user_id):
+        ...         return self.db.get(user_id)
+
+                
+        When the attribute is first accessed, it 
+        will be resolved from the corresponding 
+        dependency function
+        """        
+        if isinstance(dependency, str):
+            name = dependency
+        else:
+            name = dependency._giveme_registered_name
+            
+        return DeferredProperty(
+            partial(self.get, name)
+        )
+                
+        

@@ -223,6 +223,7 @@ def test_inject_name_override():
 # New Injector API
 
 from giveme import Injector
+from giveme.deferredproperty import DeferredProperty
 
 
 @pytest.fixture
@@ -252,6 +253,10 @@ def kwargs_f(a, b, c, simple_dep, d=4):
 
 def varargs_f(*args, simple_dep):
     return tuple(list(args)+[simple_dep])
+
+
+def list_dep():
+    return [1,2,3,4]
 
 
 class DepClass:
@@ -302,3 +307,54 @@ def test_class_dependency(gm):
     assert result[:3] == (1, 2, 3)
     assert isinstance(result[3], DepClass)
     assert result[3].param == 42
+
+
+def test_property_resolve_class_instance_behaviour(gm):
+    gm.register(list_dep)
+
+    class Thing:
+        dep = gm.resolve(list_dep)
+
+    assert isinstance(Thing.dep, DeferredProperty)
+    assert isinstance(Thing().dep, list)
+
+
+def test_property_resolve_instance_cache(gm):
+    gm.register(list_dep)
+
+    class Thing:
+        dep = gm.resolve(list_dep)
+
+    t1 = Thing()
+    t1.dep.append(50)
+
+    assert t1.dep[-1] == 50
+
+
+def test_property_resolve_per_instance_cache(gm):
+
+    gm.register(list_dep)
+
+    class Thing:
+        dep = gm.resolve(list_dep)
+
+    t1 = Thing()
+    t2 = Thing()
+
+    assert t1.dep is not t2.dep
+
+
+def test_proeprty_resolve_cache_cleared(gm):
+    gm.register(list_dep)
+
+    class Thing:
+        dep = gm.resolve(list_dep)
+
+    def nested():
+        t1 = Thing()
+        t1.dep
+        t2 = Thing()
+        t2.dep
+
+    nested()
+    assert len(list(Thing.dep._cache.keys())) == 0
