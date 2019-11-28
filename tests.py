@@ -1,9 +1,10 @@
 import pytest
 import time
+import inspect
 from functools import wraps
 from multiprocessing.pool import ThreadPool
 
-from giveme import register, inject
+from giveme import register, inject, DependencyNotFoundError
 
 
 def test_inject():
@@ -228,7 +229,7 @@ from giveme.deferredproperty import DeferredProperty
 
 @pytest.fixture
 def gm():
-    return Injector()    
+    return Injector()
 
 
 def simple_dep():
@@ -257,6 +258,10 @@ def varargs_f(*args, simple_dep):
 
 def list_dep():
     return [1,2,3,4]
+
+
+def list_f(list_dep):
+    return list_dep
 
 
 class DepClass:
@@ -358,3 +363,68 @@ def test_proeprty_resolve_cache_cleared(gm):
 
     nested()
     assert len(list(Thing.dep._cache.keys())) == 0
+
+
+def test_singleton_new(gm):
+    gm.register(list_dep, singleton=True)
+    a = gm.inject(list_f)()
+    b = gm.inject(list_f)()
+    assert a == b == list_dep()
+    assert a is b
+
+
+def test_threadlocal_new(gm):
+    gm.register(list_dep, threadlocal=True)
+    a = gm.inject(list_f)()
+    b = gm.inject(list_f)()
+    assert a == b == list_dep()
+    assert a is b
+
+
+def test_dep_not_found(gm):
+    with pytest.raises(DependencyNotFoundError):
+        gm.get("foo")
+
+
+def test_dep_removed(gm):
+    gm.register(list_dep, singleton=True)
+    assert gm.get("list_dep") == list_dep()
+    gm.delete("list_dep")
+    with pytest.raises(DependencyNotFoundError):
+        gm.get("list_dep")
+
+
+def test_curry_decoration(gm):
+    gm.register(singleton=True)(list_dep)
+    assert gm.get("list_dep") == list_dep()
+
+
+def test_inject_names(gm):
+    gm.register(list_dep)
+
+    @gm.inject(a="list_dep")
+    def f(a):
+        return a
+
+    assert f() == list_dep()
+
+
+def test_dep_not_found_on_inject(gm):
+    @gm.inject
+    def f(list_dep):
+        return list_dep
+
+    with pytest.raises(TypeError):
+        f()
+
+
+@pytest.mark.asyncio
+async def test_async_inject(gm):
+    gm.register(list_dep)
+
+    @gm.inject
+    async def f(list_dep):
+        return list_dep
+
+    assert list_dep() == await f()
+    assert inspect.iscoroutinefunction(f)

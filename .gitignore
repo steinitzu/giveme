@@ -99,3 +99,10 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# pytest
+.pytest_cache
+
+# ide
+.idea
+.vscode
