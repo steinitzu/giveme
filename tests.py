@@ -428,3 +428,11 @@ async def test_async_inject(gm):
 
     assert list_dep() == await f()
     assert inspect.iscoroutinefunction(f)
+
+    @gm.inject
+    async def f(a):
+        return a
+
+    coro = f()
+    with pytest.raises(TypeError):
+        await coro
