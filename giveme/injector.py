@@ -1,6 +1,6 @@
 import threading
 from functools import wraps, partial
-from inspect import signature
+from inspect import signature, iscoroutinefunction
 import warnings
 
 from .deferredproperty import DeferredProperty
@@ -26,16 +26,16 @@ ambigious_not_found_msg = (
 
 
 class Dependency:
-    
+
     __slots__ = ('name', 'factory', 'singleton', 'threadlocal')
-    
+
     def __init__(self, name, factory, singleton=False, threadlocal=False):
         self.name = name
         self.factory = factory
         self.singleton = singleton
         self.threadlocal = threadlocal
 
-    
+
 class Injector:
 
     def __init__(self):
@@ -47,7 +47,7 @@ class Injector:
         """
         Store an instance of dependency in the cache.
         Does nothing if dependency is NOT a threadlocal
-        or a singleton.  
+        or a singleton.
 
         :param dependency: The ``Dependency`` to cache
         :param value: The value to cache for dependency
@@ -65,7 +65,7 @@ class Injector:
 
         :param dependency: The ``Dependency`` to retrievie value for
         :type dependency: ``Dependency``
-        :return: The cached value        
+        :return: The cached value
         """
         if dependency.threadlocal:
             return getattr(self._local, dependency.name, None)
@@ -79,7 +79,7 @@ class Injector:
         :param name: Name of dependency
         :param factory: function/callable that returns dependency
         :param singleton: When True, makes the dependency a singleton.
-            Factory will only be called on first use, subsequent 
+            Factory will only be called on first use, subsequent
             uses receive a cached value.
         :param threadlocal: When True, register dependency as a threadlocal singleton,
             Same functionality as ``singleton`` except :class:`Threading.local` is used
@@ -118,7 +118,7 @@ class Injector:
         Add an object to the injector's registry.
 
         Can be used as a decorator like so:
-        
+
         >>> @injector.register
         ... def my_dependency(): ...
 
@@ -128,7 +128,7 @@ class Injector:
         :param function: The function or callable to add to the registry
         :param name: Set the name of the dependency. Defaults to the name of `function`
         :param singleton: When True, register dependency as a singleton, this
-            means that `function` is called on first use and its 
+            means that `function` is called on first use and its
             return value cached for subsequent uses. Defaults to False
         :param threadlocal: When True, register dependency as a threadlocal singleton,
             Same functionality as ``singleton`` except :class:`Threading.local` is used
@@ -144,6 +144,33 @@ class Injector:
         if function:
             return decorator(function)
         return decorator
+
+    def _resolve_arguments(self, function, names, args, kwargs):
+        sig = signature(function)
+        params = sig.parameters
+
+        bound = sig.bind_partial(*args, **kwargs)
+        bound.apply_defaults()
+
+        injected_kwargs = {}
+        for key, value in params.items():
+            if key not in bound.arguments:
+                name = names.get(key)
+                if name:
+                    # Raise error when dep named explicitly
+                    # and missing
+                    injected_kwargs[key] = self.get(name)
+                else:
+                    try:
+                        injected_kwargs[key] = self.get(key)
+                    except DependencyNotFoundError:
+                        warnings.warn(
+                            ambigious_not_found_msg.format(key),
+                            DependencyNotFoundWarning
+                        )
+
+        injected_kwargs.update(bound.kwargs)
+        return bound.args, injected_kwargs
 
     def inject(self, function=None, **names):
         """
@@ -167,39 +194,26 @@ class Injector:
         def decorator(function):
             @wraps(function)
             def wrapper(*args, **kwargs):
-                sig = signature(function)
-                params = sig.parameters
+                args, kwargs = self._resolve_arguments(function, names, args, kwargs)
+                return function(*args, **kwargs)
 
-                bound = sig.bind_partial(*args, **kwargs)
-                bound.apply_defaults()
+            @wraps(function)
+            async def awrapper(*args, **kwargs):
+                args, kwargs = self._resolve_arguments(function, names, args, kwargs)
+                return await function(*args, **kwargs)
 
-                injected_kwargs = {}
-                for key, value in params.items():
-                    if key not in bound.arguments:
-                        name = names.get(key)
-                        if name:
-                            # Raise error when dep named explicitly
-                            # and missing
-                            injected_kwargs[key] = self.get(name)
-                        else:
-                            try:
-                                injected_kwargs[key] = self.get(key)
-                            except DependencyNotFoundError as e:
-                                warnings.warn(
-                                    ambigious_not_found_msg.format(key),
-                                    DependencyNotFoundWarning
-                                )
-                            
-                injected_kwargs.update(bound.kwargs)
-                return function(*bound.args, **injected_kwargs)
-            return wrapper
+            if iscoroutinefunction(function):
+                return awrapper
+            else:
+                return wrapper
+
         if function:
             return decorator(function)
         return decorator
 
     def resolve(self, dependency):
         """
-        Resolve dependency as instance attribute 
+        Resolve dependency as instance attribute
         of given class.
 
         >>> class Users:
@@ -208,18 +222,16 @@ class Injector:
         ...     def get_by_id(self, user_id):
         ...         return self.db.get(user_id)
 
-                
-        When the attribute is first accessed, it 
-        will be resolved from the corresponding 
+
+        When the attribute is first accessed, it
+        will be resolved from the corresponding
         dependency function
-        """        
+        """
         if isinstance(dependency, str):
             name = dependency
         else:
             name = dependency._giveme_registered_name
-            
+
         return DeferredProperty(
             partial(self.get, name)
         )
-                
-        
