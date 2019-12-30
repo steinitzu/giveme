@@ -8,3 +8,13 @@ python:
   - "3.8-dev"
 install: "pip install -r requirements-dev.txt"
 script: pytest tests.py
+# deploy:
+#   provider: pypi
+#   user: __token__
+#   password:
+#     secure:
+#   distributions: sdist bdist_wheel
+#   skip_existing: true
+#   skip_cleanup: true
+#   on:
+#     branch: master
