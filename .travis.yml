@@ -10,11 +10,11 @@ install: "pip install -r requirements-dev.txt"
 script: pytest tests.py
 # deploy:
 #   provider: pypi
-#   user: __token__
+#   username: __token__
 #   password:
 #     secure:
 #   distributions: sdist bdist_wheel
 #   skip_existing: true
-#   skip_cleanup: true
+#   cleanup: false
 #   on:
 #     branch: master
