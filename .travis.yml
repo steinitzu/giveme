@@ -1,20 +1,20 @@
 language: python
 python:
-  - "3.6"
-  - "3.6-dev"
-  - "3.7"
-  - "3.7-dev"
-  - "3.8"
-  - "3.8-dev"
-install: "pip install -r requirements-dev.txt"
+- '3.6'
+- 3.6-dev
+- '3.7'
+- 3.7-dev
+- '3.8'
+- 3.8-dev
+install: pip install -r requirements-dev.txt
 script: pytest tests.py
-# deploy:
-#   provider: pypi
-#   username: __token__
-#   password:
-#     secure:
-#   distributions: sdist bdist_wheel
-#   skip_existing: true
-#   cleanup: false
-#   on:
-#     branch: master
+deploy:
+  provider: pypi
+  username: __token__
+  password:
+    secure: LmMEZ2oksLuYTG63OrObh2o4tySe3leRYfe4nY9Mh/Y9MtAB3esSzldieVnUSiESgkfPs6J2JI9Eca3os83sZXo+7iFJQNlufaJJCCeLWrDibwVJOMr2oIsw/eESg99XhXU8gYjtYaayj6TK7GHBVjPmzgFDo/RcHY7rybNbExJs9sjfgd5TgWfxAS9lOtcBoIgyF/yhx0+zYutv+zR5fpWrpKpfKi/VApul1arRCJu5Yreo0x0Wv3ZwZ5bbGrj9uFyeym9c9Mn/55AJxW/X2xAZatwOCgV1SBpLcwajwpQ7bAf/nkIrd/SUB6vA3XORUFZ+VL3y+CKUtps3/mlIgdUHLZdXDcpjpx4mol5cNjlCxYAXt5LmMotF63pEovXF+j7D+vQztnDCvb8hDB86NswJRuO7qIYrDgofgTIO9QYoMKbcN75tP9DN9AtdmfVhket9HyAD49galjWkrJhtcbg3gZiKffKQkJCyhuKUWit4nOaozBwrlT116P2hyC2+MPkbdPDgvkzYvc33jRWdh/xOoovMzASEAlOTZts3m0hewbEDNi9HNP7R3TotZt07WTQDIcvBm/3U2Mfqcb+WguYvTcvIPjyBGe2rPeI1g33iVnHqoD1a6bXi4j73BjMvtKBqq1Q8MSZ+7PMb0WBb+Z7IN/RsN9Mve1BXPfMmhwE=
+  distributions: sdist bdist_wheel
+  skip_existing: true
+  cleanup: false
+  on:
+    branch: master
