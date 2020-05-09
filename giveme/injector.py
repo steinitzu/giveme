@@ -39,9 +39,7 @@ class Dependency:
 class Injector:
 
     def __init__(self):
-        self._local = threading.local()
-        self._singleton = {}
-        self._registry = {}
+        self._reset()
 
     def cache(self, dependency: Dependency, value):
         """
@@ -107,13 +105,17 @@ class Injector:
             self.cache(dep, value)
         return value
 
+    def _reset(self):
+        self._local = threading.local()
+        self._singleton = {}
+        self._registry = {}
+
     def clear(self):
         """
         Clear (unregister) all dependencies. Useful in tests, where you need
         clean setup on every test.
         """
-        self._singleton.clear()
-        self._registry.clear()
+        self._reset()
 
     def delete(self, name):
         """
