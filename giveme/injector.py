@@ -123,6 +123,8 @@ class Injector:
         """
         if name in self._singleton:
             del self._singleton[name]
+        if hasattr(self._local, name):
+            delattr(self._local, name)
         del self._registry[name]
 
     def register(self, function=None, *, singleton=False, threadlocal=False, name=None):
