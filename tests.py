@@ -436,3 +436,18 @@ async def test_async_inject(gm):
     coro = f()
     with pytest.raises(TypeError):
         await coro
+
+
+def test_clear_injector(gm):
+    gm.register(list_dep)
+
+    @gm.inject
+    def f(list_dep):
+        return list_dep
+
+    assert list_dep() == f()
+
+    gm.clear()
+
+    with pytest.raises(TypeError):
+        f()

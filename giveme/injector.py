@@ -1,7 +1,7 @@
 import threading
-from functools import wraps, partial
-from inspect import signature, iscoroutinefunction
 import warnings
+from functools import partial, wraps
+from inspect import iscoroutinefunction, signature
 
 from .deferredproperty import DeferredProperty
 
@@ -39,9 +39,7 @@ class Dependency:
 class Injector:
 
     def __init__(self):
-        self._local = threading.local()
-        self._singleton = {}
-        self._registry = {}
+        self._reset()
 
     def cache(self, dependency: Dependency, value):
         """
@@ -107,10 +105,26 @@ class Injector:
             self.cache(dep, value)
         return value
 
+    def _reset(self):
+        self._local = threading.local()
+        self._singleton = {}
+        self._registry = {}
+
+    def clear(self):
+        """
+        Clear (unregister) all dependencies. Useful in tests, where you need
+        clean setup on every test.
+        """
+        self._reset()
+
     def delete(self, name):
         """
         Delete (unregister) a dependency by name.
         """
+        if name in self._singleton:
+            del self._singleton[name]
+        if hasattr(self._local, name):
+            delattr(self._local, name)
         del self._registry[name]
 
     def register(self, function=None, *, singleton=False, threadlocal=False, name=None):
