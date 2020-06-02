@@ -1,4 +1,4 @@
-from .core import inject, register, manager
-from .injector import Injector, DependencyNotFoundError
+from .core import inject, manager, register
+from .injector import DependencyNotFoundError, Injector
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
