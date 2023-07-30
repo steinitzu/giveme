@@ -10,7 +10,7 @@ class DependencyNotFoundError(Exception):
     pass
 
 
-class AsyncDependencyProvided(Exception):
+class AsyncDependencyForbiddenError(Exception):
     pass
 
 
@@ -87,6 +87,8 @@ class Injector:
             Same functionality as ``singleton`` except :class:`Threading.local` is used
             to cache return values.
         """
+        if iscoroutinefunction(factory):
+            raise AsyncDependencyForbiddenError(name)
         name = name or factory.__name__
         factory._giveme_registered_name = name
         dep = Dependency(name, factory, singleton, threadlocal)
@@ -105,8 +107,6 @@ class Injector:
             raise DependencyNotFoundError(name) from None
         value = self.cached(dep)
         if value is None:
-            if iscoroutinefunction(dep.factory):
-                raise AsyncDependencyProvided(name)
             value = dep.factory()
             self.cache(dep, value)
         return value
