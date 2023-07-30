@@ -10,6 +10,10 @@ class DependencyNotFoundError(Exception):
     pass
 
 
+class AsyncDependencyProvided(Exception):
+    pass
+
+
 class DependencyNotFoundWarning(RuntimeWarning):
     pass
 
@@ -101,6 +105,8 @@ class Injector:
             raise DependencyNotFoundError(name) from None
         value = self.cached(dep)
         if value is None:
+            if iscoroutinefunction(dep.factory):
+                raise AsyncDependencyProvided(name)
             value = dep.factory()
             self.cache(dep, value)
         return value

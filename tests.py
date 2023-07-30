@@ -5,6 +5,7 @@ from functools import wraps
 from multiprocessing.pool import ThreadPool
 
 from giveme import register, inject, DependencyNotFoundError
+from giveme.injector import AsyncDependencyProvided
 
 
 def test_inject():
@@ -236,6 +237,9 @@ def simple_dep():
     return 42
 
 
+async def async_simple_dep():
+    return 566
+
 def double_dep(simple_dep):
     return simple_dep*2
 
@@ -451,3 +455,14 @@ def test_clear_injector(gm):
 
     with pytest.raises(TypeError):
         f()
+
+
+@pytest.mark.asyncio
+async def test_inject_async_dep(gm):
+    gm.register(async_simple_dep)
+
+    @gm.inject
+    async def f(async_simple_dep):
+        return async_simple_dep
+    with pytest.raises(AsyncDependencyProvided):
+        await f()
