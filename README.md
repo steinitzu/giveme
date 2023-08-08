@@ -59,7 +59,7 @@ GiveMe has many more advanced options, for more examples and full API documentat
 
 `pip install giveme`
 
-Python3.5 and up are supported.
+Python3.8 and up are supported.
 
 
 <a id="orgd8ed99f"></a>
